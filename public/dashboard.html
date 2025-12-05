@@ -1,0 +1,1811 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Denim Gym - Management Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <script>
+// Check authentication
+(function() {
+    const sessionId = sessionStorage.getItem('sessionId') || 
+                     new URLSearchParams(window.location.search).get('session');
+    
+    if (!sessionId) {
+        // No session, redirect to login
+        window.location.href = '/';
+    }
+    
+    // Store session ID for API calls
+    window.sessionId = sessionId;
+})();
+</script>
+
+    <!-- Header -->
+<header class="header">
+    <div class="logo">
+        <i class="fas fa-dumbbell"></i>
+        <h1>Denim Gym</h1>
+    </div>
+    
+    <!-- Voice Control Container -->
+    <div class="voice-control-container">
+        <button id="voiceToggle" class="btn-voice-toggle" onclick="toggleVoiceControl()" title="Toggle Voice Control">
+            <i class="fas fa-microphone-slash" id="voiceMicIcon"></i>
+            <span id="voiceStatus">Voice: OFF</span>
+        </button>
+        <div id="voiceIndicator" class="voice-indicator">
+            <div class="listening-animation"></div>
+            <span id="listeningText">Listening...</span>
+        </div>
+        <div id="lastCommandDisplay" class="last-command">
+            Last: <span id="lastCommandText">-</span>
+        </div>
+    </div>
+    
+    <!-- In the header user-info section, replace the user span -->
+<div class="user-info">
+    <select id="currencySelect" class="currency-select" onchange="changeCurrency(this.value)">
+        <option value="INR">₹ INR</option>
+        <option value="USD">$ USD</option>
+    </select>
+    
+    <button class="btn-backup" onclick="openBackupModal()" title="Backup Database">
+        <i class="fas fa-database"></i> Backup
+    </button>
+    <button class="btn-settings" onclick="openSettings()" title="Settings">
+        <i class="fas fa-cog"></i>
+    </button>
+    <span id="userEmail">Admin</span>
+    <button class="btn-logout" onclick="logout()" title="Logout" style="background: transparent; border: none; cursor: pointer; color: white;">
+        <i class="fas fa-sign-out-alt"></i>
+    </button>
+</div>
+</header>
+    <!-- Sidebar Navigation -->
+<nav class="sidebar">
+    <ul class="nav-menu">
+        <li class="nav-item active" data-section="dashboard">
+            <i class="fas fa-chart-line"></i>
+            <span>Dashboard</span>
+        </li>
+        
+        <li class="nav-item" data-section="payments">
+    <i class="fas fa-credit-card"></i>
+    <span>Payments</span>
+</li>
+
+<li class="nav-item" data-section="trainer-attendance">
+    <i class="fas fa-user-check"></i>
+    <span>Trainer Attendance</span>
+</li>
+
+<li class="nav-item" data-section="license">
+    <i class="fas fa-key"></i>
+    <span>License</span>
+</li>
+
+<!-- ADD ONLY THESE TWO NEW ITEMS -->
+<li class="nav-item" data-section="receipts-list">
+    <i class="fas fa-receipt"></i>
+    <span>Receipt & History</span>
+</li>
+
+<li class="nav-item" data-section="reports-list">
+    <i class="fas fa-chart-bar"></i>
+    <span>Reports & History</span>
+</li>
+
+<li class="nav-item" data-section="members">
+    <i class="fas fa-users"></i>
+    <span>Members</span>
+</li>
+        
+            <li class="nav-item" data-section="trainers">
+                <i class="fas fa-user-tie"></i>
+                <span>Trainers</span>
+            </li>
+            <li class="nav-item" data-section="premium">
+                <i class="fas fa-crown"></i>
+                <span>Premium</span>
+            </li>
+
+            <li class="nav-item" data-section="attendance">
+    <i class="fas fa-clipboard-check"></i>
+    <span>Attendance</span>
+</li>
+
+             <li class="nav-item" data-section="equipment">
+    <i class="fas fa-dumbbell"></i>
+    <span>Equipment</span>
+</li>
+
+            <li class="nav-item" data-section="settings">
+                <i class="fas fa-cog"></i>
+                <span>Settings</span>
+            </li>
+        </ul>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Dashboard Section -->
+        <section id="dashboard" class="content-section active">
+            <h2 class="section-title">Dashboard Overview</h2>
+            
+            <!-- Stats Cards -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon revenue">
+                        <i class="fas fa-dollar-sign"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3 id="totalRevenue">$0</h3>
+                        <p>Total Revenue</p>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                        <i class="fas fa-wallet"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3 id="trainerSalaries">$0</h3>
+                        <p>Trainer Salaries</p>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3 id="netProfit">$0</h3>
+                        <p>Net Profit</p>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon members">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3 id="totalMembers">0</h3>
+                        <p>Total Members</p>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon premium">
+                        <i class="fas fa-crown"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3 id="premiumMembers">0</h3>
+                        <p>Premium Members</p>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon due">
+                        <i class="fas fa-exclamation-circle"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3 id="dueMembers">0</h3>
+                        <p>Due Payments</p>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon trainers">
+                        <i class="fas fa-user-tie"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3 id="totalTrainers">0</h3>
+                        <p>Active Trainers</p>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon attendance">
+                        <i class="fas fa-calendar-check"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3 id="todayAttendance">0</h3>
+                        <p>Today's Attendance</p>
+                    </div>
+                </div>
+
+            <div class="stat-card">
+    <div class="stat-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+        <i class="fas fa-dumbbell"></i>
+    </div>
+    <div class="stat-info">
+        <h3 id="dashboardTotalEquipment">0</h3>
+        <p>Total Equipment</p>
+    </div>
+</div>
+
+<div class="stat-card">
+    <div class="stat-icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+        <i class="fas fa-wrench"></i>
+    </div>
+    <div class="stat-info">
+        <h3 id="dashboardBrokenEquipment">0</h3>
+        <p>Broken/Missing</p>
+    </div>
+</div>
+ </div>
+
+           <!-- Financial Overview Card -->
+            <div class="financial-overview">
+                <h3><i class="fas fa-chart-pie"></i> Financial Overview</h3>
+                <div class="financial-grid">
+                    <div class="financial-item income">
+                        <div class="financial-label">
+                            <i class="fas fa-arrow-up"></i> Total Income
+                        </div>
+                        <div class="financial-amount" id="financialIncome">$0</div>
+                    </div>
+                    <div class="financial-item expense">
+                        <div class="financial-label">
+                            <i class="fas fa-arrow-down"></i> Total Expenses
+                        </div>
+                        <div class="financial-amount" id="financialExpenses">$0</div>
+                        <div class="financial-breakdown">
+    <span>Trainer Salaries: <strong id="financialTrainerSalaries">$0</strong></span>
+    <span style="margin-left: 1rem;">Equipment: <strong id="financialEquipmentExpenses">$0</strong></span>
+</div>
+                    </div>
+                    <div class="financial-item profit">
+                        <div class="financial-label">
+                            <i class="fas fa-chart-line"></i> Net Profit
+                        </div>
+                        <div class="financial-amount" id="financialProfit">$0</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts -->
+            <div class="charts-grid">
+                <div class="chart-card">
+                    <h3>Revenue Overview</h3>
+                    <canvas id="revenueChart"></canvas>
+                </div>
+                
+                <div class="chart-card">
+                    <h3>Profit & Loss Analysis</h3>
+                    <canvas id="profitChart"></canvas>
+                </div>
+                
+                <div class="chart-card">
+                    <h3>Member Statistics</h3>
+                    <canvas id="memberChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Recent Activities -->
+            <div class="recent-activities">
+                <div class="activity-card">
+                    <h3>Recent Admissions</h3>
+                    <div id="recentAdmissions" class="activity-list"></div>
+                </div>
+                
+                <div class="activity-card">
+                    <h3>Recently Joined Trainers</h3>
+                    <div id="recentTrainers" class="activity-list"></div>
+                </div>
+                
+                <div class="activity-card">
+                    <h3>Suspended/Quit Members</h3>
+                    <div id="suspendedMembers" class="activity-list"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Payments Section -->
+<section id="payments" class="content-section">
+    <div class="section-header">
+        <h2 class="section-title">Payment Management</h2>
+        <button class="btn-primary" onclick="showPaymentModal()">
+            <i class="fas fa-plus"></i> Add Payment
+        </button>
+    </div>
+
+    <!-- Filter Controls for Payments -->
+    <div class="filter-controls">
+        <div class="filter-group">
+            <!-- Payment Status Filter -->
+            <label><i class="fas fa-money-bill-wave"></i> Status:</label>
+            <select id="paymentsStatusFilter" class="filter-select" onchange="applyPaymentFilters()">
+                <option value="all">All Payments</option>
+                <option value="paid">Paid Only</option>
+                <option value="due">Due Only</option>
+            </select>
+            
+            <!-- Member Search -->
+            <label style="margin-left: 1rem;"><i class="fas fa-search"></i> Search:</label>
+            <input 
+                type="text" 
+                id="paymentsMemberSearch" 
+                class="filter-input" 
+                placeholder="Search by Name or ID"
+                oninput="applyPaymentFilters()"
+                style="min-width: 200px;"
+            >
+            
+            <!-- Date Filter -->
+            <label style="margin-left: 1rem;"><i class="fas fa-calendar"></i> Filter by:</label>
+            <select id="paymentsFilterType" class="filter-select">
+                <option value="all">All Dates</option>
+                <option value="year">Year</option>
+                <option value="month">Month</option>
+                <option value="date">Specific Date</option>
+            </select>
+            <select id="paymentsYearFilter" class="filter-select year-filter" style="display: none;"></select>
+            <select id="paymentsMonthFilter" class="filter-select month-filter" style="display: none;"></select>
+            <input type="date" id="paymentsDateFilter" class="filter-input" style="display: none;">
+            
+            <button class="btn-filter-reset" onclick="resetPaymentFilters()" title="Reset All Filters">
+                <i class="fas fa-redo"></i> Reset
+            </button>
+        </div>
+        <div id="paymentsFilterCount" class="filter-count">Showing all payments</div>
+    </div>
+    
+    <div class="table-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Member Name</th>
+                    <th>Member Type</th>
+                    <th>Trainer Assigned</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                    <th>Date</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="paymentsTableBody"></tbody>
+        </table>
+    </div>
+</section>
+
+        <!-- Members Section -->
+<section id="members" class="content-section">
+    <div class="section-header">
+        <h2 class="section-title">Member Management</h2>
+        <button class="btn-primary" onclick="showMemberModal()">
+            <i class="fas fa-plus"></i> Add Member
+        </button>
+    </div>
+
+    <!-- Filter Controls for Members -->
+<div class="filter-controls">
+    <div class="filter-group">
+        <!-- Member Search -->
+        <label><i class="fas fa-search"></i> Search:</label>
+        <input 
+            type="text" 
+            id="membersSearch" 
+            class="filter-input" 
+            placeholder="Search by Name or ID"
+            oninput="applyMemberFilters()"
+            style="min-width: 200px;"
+        >
+        
+        <!-- Date Filter -->
+        <label style="margin-left: 1rem;"><i class="fas fa-calendar"></i> Filter by:</label>
+        <select id="membersFilterType" class="filter-select">
+            <option value="all">All Dates</option>
+            <option value="year">Year</option>
+            <option value="month">Month</option>
+            <option value="date">Specific Date</option>
+        </select>
+        <select id="membersYearFilter" class="filter-select year-filter" style="display: none;"></select>
+        <select id="membersMonthFilter" class="filter-select month-filter" style="display: none;"></select>
+        <input type="date" id="membersDateFilter" class="filter-input" style="display: none;">
+        
+        <button class="btn-filter-reset" onclick="resetMemberFilters()" title="Reset All Filters">
+            <i class="fas fa-redo"></i> Reset
+        </button>
+    </div>
+    <div id="membersFilterCount" class="filter-count">Showing all members</div>
+</div>
+    
+    <div class="table-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Phone</th>
+                    <th>Email</th>
+                    <th>Address</th>
+                    <th>Status</th>
+                    <th>Join Date</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="membersTableBody"></tbody>
+        </table>
+    </div>
+</section>
+
+        <!-- Trainers Section -->
+        <section id="trainers" class="content-section">
+            <div class="section-header">
+                <h2 class="section-title">Trainer Management</h2>
+                <div style="display: flex; gap: 1rem;">
+                    <button class="btn-primary" onclick="showTrainerModal()">
+                        <i class="fas fa-plus"></i> Add Trainer
+                    </button>
+                    <button class="btn-secondary" onclick="showTrainerSalarySection()" style="background: var(--success-color);">
+                        <i class="fas fa-money-bill-wave"></i> Pay Trainer Salary
+                    </button>
+                </div>
+            </div>
+
+            <!-- Filter Controls for Trainers -->
+<div class="filter-controls">
+    <div class="filter-group">
+        <!-- Trainer Search -->
+        <label><i class="fas fa-search"></i> Search:</label>
+        <input 
+            type="text" 
+            id="trainersSearch" 
+            class="filter-input" 
+            placeholder="Search by Name or ID"
+            oninput="applyTrainerFilters()"
+            style="min-width: 200px;"
+        >
+        
+        <!-- Date Filter -->
+        <label style="margin-left: 1rem;"><i class="fas fa-calendar"></i> Filter by:</label>
+        <select id="trainersFilterType" class="filter-select">
+            <option value="all">All Dates</option>
+            <option value="year">Year</option>
+            <option value="month">Month</option>
+            <option value="date">Specific Date</option>
+        </select>
+        <select id="trainersYearFilter" class="filter-select year-filter" style="display: none;"></select>
+        <select id="trainersMonthFilter" class="filter-select month-filter" style="display: none;"></select>
+        <input type="date" id="trainersDateFilter" class="filter-input" style="display: none;">
+        
+        <button class="btn-filter-reset" onclick="resetTrainerFilters()" title="Reset All Filters">
+            <i class="fas fa-redo"></i> Reset
+        </button>
+    </div>
+    <div id="trainersFilterCount" class="filter-count">Showing all trainers</div>
+</div>
+            
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Specialty</th>
+                            <th>Status</th>
+                            <th>Salary</th>
+                            <th>Join Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="trainersTableBody"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Trainer Salary Section -->
+        <section id="trainer-salary" class="content-section">
+            <div class="section-header">
+                <h2 class="section-title">Trainer Salary Management</h2>
+                <button class="btn-secondary" onclick="switchSection('trainers'); document.querySelector('.nav-item[data-section=trainers]').click();">
+                    <i class="fas fa-arrow-left"></i> Back to Trainers
+                </button>
+            </div>
+            
+            <div class="premium-stats" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <div class="premium-stat">
+                    <h3 id="totalTrainerSalary">$0</h3>
+                    <p>Total Monthly Salary</p>
+                </div>
+                <div class="premium-stat">
+                    <h3 id="paidTrainerSalary">$0</h3>
+                    <p>Paid This Month</p>
+                </div>
+                <div class="premium-stat">
+                    <h3 id="unpaidTrainerSalary">$0</h3>
+                    <p>Unpaid This Month</p>
+                </div>
+            </div>
+
+            <!-- Filter Controls for Trainer Salary -->
+            <div class="filter-controls">
+                <div class="filter-group">
+                    <label><i class="fas fa-calendar"></i> Filter by:</label>
+                    <select id="trainerSalaryFilterType" class="filter-select">
+                        <option value="all">All Records</option>
+                        <option value="year">Year</option>
+                        <option value="month">Month</option>
+                    </select>
+                    <select id="trainerSalaryYearFilter" class="filter-select year-filter" style="display: none;"></select>
+                    <select id="trainerSalaryMonthFilter" class="filter-select month-filter" style="display: none;"></select>
+                    
+                    <button class="btn-filter-reset" onclick="resetTrainerSalaryFilters()" title="Reset Filters">
+                        <i class="fas fa-redo"></i> Reset
+                    </button>
+                </div>
+                <div id="trainerSalaryFilterCount" class="filter-count">Showing all records</div>
+            </div>
+            
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Trainer Name</th>
+                            <th>Specialty</th>
+                            <th>Monthly Salary</th>
+                            <th>Payment Date</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="trainerSalaryTableBody"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Premium Section -->
+        <section id="premium" class="content-section">
+            <div class="section-header">
+                <h2 class="section-title">Premium Members</h2>
+                <button class="btn-primary" onclick="showPremiumModal()">
+                    <i class="fas fa-plus"></i> Add Premium Member
+                </button>
+            </div>
+            
+            <div class="premium-stats">
+                <div class="premium-stat">
+                    <h3 id="premiumCount">0</h3>
+                    <p>Total Premium</p>
+                </div>
+                <div class="premium-stat">
+                    <h3 id="premiumRevenue">$0</h3>
+                    <p>Premium Revenue</p>
+                </div>
+            </div>
+
+            <!-- Filter Controls for Premium -->
+            <div class="filter-controls">
+                <div class="filter-group">
+                    <label><i class="fas fa-filter"></i> Filter by:</label>
+                    <select id="premiumFilterType" class="filter-select">
+                        <option value="all">All Records</option>
+                        <option value="year">Year</option>
+                        <option value="month">Month</option>
+                        <option value="date">Specific Date</option>
+                    </select>
+                    <select id="premiumYearFilter" class="filter-select year-filter" style="display: none;"></select>
+                    <select id="premiumMonthFilter" class="filter-select month-filter" style="display: none;"></select>
+                    <input type="date" id="premiumDateFilter" class="filter-input" style="display: none;">
+                    <button class="btn-filter-reset" onclick="resetFilters('premium')" title="Reset Filters">
+                        <i class="fas fa-redo"></i>
+                    </button>
+                </div>
+                <div id="premiumFilterCount" class="filter-count">Showing all records</div>
+            </div>
+            
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Plan</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                            <th>Expiry Date</th>
+                            <th>Actions</th>
+                            <th>Trainer Assigned</th>
+                        </tr>
+                    </thead>
+                    <tbody id="premiumTableBody"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Attendance Section -->
+<section id="attendance" class="content-section">
+    <div class="section-header">
+        <h2 class="section-title">Attendance Management</h2>
+        <button class="btn-primary" onclick="showMarkAttendanceModal()">
+            <i class="fas fa-user-check"></i> Mark Attendance
+        </button>
+    </div>
+    
+    <!-- Filter Controls -->
+    <div class="filter-controls">
+        <div class="filter-group">
+            <label><i class="fas fa-search"></i> Search:</label>
+            <input type="text" id="attendanceSearch" class="filter-input" 
+                   placeholder="Search by Name or ID" oninput="applyAttendanceFilters()">
+            
+            <label style="margin-left: 1rem;"><i class="fas fa-clock"></i> Shift:</label>
+            <select id="attendanceShiftFilter" class="filter-select" onchange="applyAttendanceFilters()">
+                <option value="all">All Shifts</option>
+                <option value="Morning">Morning</option>
+                <option value="Evening">Evening</option>
+                <option value="Night">Night</option>
+            </select>
+            
+            <button class="btn-filter-reset" onclick="resetAttendanceFilters()">
+                <i class="fas fa-redo"></i> Reset
+            </button>
+        </div>
+        <div id="attendanceFilterCount" class="filter-count">Showing latest attendance for each member</div>
+    </div>
+    
+    <!-- Attendance Table - Shows latest attendance per member -->
+    <div class="table-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Member ID</th>
+                    <th>Member Name</th>
+                    <th>Latest Shift</th>
+                    <th>Latest Time</th>
+                    <th>Latest Date</th>
+                    <th>Total Records</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="attendanceTableBody"></tbody>
+        </table>
+    </div>
+</section>
+
+<!-- Member Attendance History Modal -->
+<div id="memberAttendanceHistoryModal" class="modal">
+    <div class="modal-content modal-large">
+        <span class="close" onclick="closeModal('memberAttendanceHistoryModal')">&times;</span>
+        <h2 id="attendanceHistoryTitle">Attendance History</h2>
+        <p id="attendanceHistoryMemberInfo" style="color: var(--text-secondary); margin-bottom: 1.5rem;"></p>
+        <div id="attendanceHistoryInfo" style="margin-bottom: 1rem; padding: 1rem; background: var(--light-bg); border-radius: 4px;"></div>
+        
+        <div style="margin-bottom: 1rem;">
+            <button class="btn-secondary" onclick="printMemberAttendanceHistory()">
+                <i class="fas fa-print"></i> Print History
+            </button>
+        </div>
+        
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Shift</th>
+                        <th>Time</th>
+                        <th>Date</th>
+                        <th>Year</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="attendanceHistoryTableBody"></tbody>
+            </table>
+        </div>
+        
+        <div class="form-actions" style="margin-top: 1.5rem;">
+            <button type="button" class="btn-secondary" onclick="closeModal('memberAttendanceHistoryModal')">Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- Trainer Attendance Section -->
+<section id="trainer-attendance" class="content-section">
+    <div class="section-header">
+        <h2 class="section-title">Trainer Attendance Management</h2>
+        <button class="btn-primary" onclick="showMarkTrainerAttendanceModal()">
+            <i class="fas fa-user-check"></i> Mark Trainer Attendance
+        </button>
+    </div>
+    
+    <!-- Filter Controls -->
+    <div class="filter-controls">
+        <div class="filter-group">
+            <label><i class="fas fa-search"></i> Search:</label>
+            <input type="text" id="trainerAttendanceSearch" class="filter-input" 
+                   placeholder="Search by Name or ID" oninput="applyTrainerAttendanceFilters()">
+            
+            <label style="margin-left: 1rem;"><i class="fas fa-clock"></i> Shift:</label>
+            <select id="trainerAttendanceShiftFilter" class="filter-select" onchange="applyTrainerAttendanceFilters()">
+                <option value="all">All Shifts</option>
+                <option value="Morning">Morning</option>
+                <option value="Evening">Evening</option>
+                <option value="Night">Night</option>
+            </select>
+            
+            <button class="btn-filter-reset" onclick="resetTrainerAttendanceFilters()">
+                <i class="fas fa-redo"></i> Reset
+            </button>
+        </div>
+        <div id="trainerAttendanceFilterCount" class="filter-count">Showing latest attendance for each trainer</div>
+    </div>
+    
+    <!-- Trainer Attendance Table -->
+    <div class="table-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Trainer ID</th>
+                    <th>Trainer Name</th>
+                    <th>Latest Shift</th>
+                    <th>Latest Time</th>
+                    <th>Latest Date</th>
+                    <th>Total Records</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="trainerAttendanceTableBody"></tbody>
+        </table>
+    </div>
+</section>
+
+<!-- Trainer Attendance History Modal -->
+<div id="trainerAttendanceHistoryModal" class="modal">
+    <div class="modal-content" style="max-width: 800px;">
+        <span class="close" onclick="closeModal('trainerAttendanceHistoryModal')">&times;</span>
+        <h2 id="trainerAttendanceHistoryTitle">Attendance History</h2>
+        <div id="trainerAttendanceHistoryInfo" style="margin: 1rem 0; padding: 1rem; background: var(--light-bg); border-radius: 4px;"></div>
+        
+        <button class="btn-primary" onclick="closeModal('trainerAttendanceHistoryModal'); showMarkTrainerAttendanceModal();" style="margin-bottom: 1rem;">
+            <i class="fas fa-plus"></i> Add Attendance Record
+        </button>
+        
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Shift</th>
+                        <th>Time</th>
+                        <th>Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="trainerAttendanceHistoryTableBody">
+                    <!-- Populated by JavaScript -->
+                </tbody>
+            </table>
+        </div>
+        
+        <button class="btn-secondary" onclick="closeModal('trainerAttendanceHistoryModal')" style="margin-top: 1rem; width: 100%;">
+            Close
+        </button>
+    </div>
+</div>
+
+<!-- Mark Trainer Attendance Modal -->
+<div id="markTrainerAttendanceModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeModal('markTrainerAttendanceModal')">&times;</span>
+        <h2>Mark Trainer Attendance</h2>
+        <form id="trainerAttendanceForm">
+            <div class="form-group">
+                <label>Select Trainer</label>
+                <select id="trainerAttendanceMember" required>
+                    <option value="">Choose a trainer...</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Shift</label>
+                <select id="trainerAttendanceShift" required>
+                    <option value="Morning">Morning (6 AM - 12 PM)</option>
+                    <option value="Evening">Evening (12 PM - 6 PM)</option>
+                    <option value="Night">Night (6 PM - 12 AM)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Date</label>
+                <input type="date" id="trainerAttendanceDate" required>
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn-primary">Mark Present</button>
+                <button type="button" class="btn-secondary" onclick="closeModal('markTrainerAttendanceModal')">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Logout Confirmation Modal -->
+<div id="logoutModal" class="modal">
+    <div class="modal-content" style="max-width: 400px;">
+        <div style="text-align: center; padding: 1rem 0;">
+            <i class="fas fa-sign-out-alt" style="font-size: 3rem; color: #e74c3c; margin-bottom: 1rem;"></i>
+            <h2 style="margin-bottom: 0.5rem;">Confirm Logout</h2>
+            <p style="color: var(--text-secondary); margin-bottom: 2rem;">
+                Are you sure you want to log out of your account?
+            </p>
+        </div>
+        <div class="form-actions">
+            <button class="btn-primary" onclick="confirmLogout()" style="background: #e74c3c;">
+                <i class="fas fa-check"></i> Yes, Logout
+            </button>
+            <button class="btn-secondary" onclick="closeModal('logoutModal')">
+                <i class="fas fa-times"></i> Cancel
+            </button>
+        </div>
+    </div>
+</div>
+
+        <!-- Receipts Section -->
+<section id="receipts-list" class="content-section">
+    <div class="section-header">
+        <h2 class="section-title">Receipt History</h2>
+        <button class="btn-primary" onclick="showReceiptModal()">
+            <i class="fas fa-plus"></i> Create New Receipt
+        </button>
+    </div>
+    
+    <div class="table-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Receipt #</th>
+                    <th>Member Name</th>
+                    <th>Date</th>
+                    <th>Amount</th>
+                    <th>Payment Method</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="receiptsTableBody"></tbody>
+        </table>
+    </div>
+</section>
+
+<!-- Reports Section -->
+<section id="reports-list" class="content-section">
+    <div class="section-header">
+        <h2 class="section-title">Reports & History</h2>
+        <button class="btn-primary" onclick="showGenerateReportModal()">
+            <i class="fas fa-plus"></i> Generate New Report
+        </button>
+    </div>
+    
+    <div class="table-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Report Type</th>
+                    <th>Generated Date</th>
+                    <th>Date & Time</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="reportsTableBody"></tbody>
+        </table>
+    </div>
+</section>
+
+<!-- Equipment Section -->
+<section id="equipment" class="content-section">
+    <div class="section-header">
+        <h2><i class="fas fa-dumbbell"></i> Equipment Management</h2>
+        <button class="btn-primary" onclick="showEquipmentModal()">
+            <i class="fas fa-plus"></i> Add Equipment
+        </button>
+    </div>
+
+    <!-- Equipment Stats -->
+    <div class="stats-grid" style="grid-template-columns: repeat(3, 1fr); margin-bottom: 2rem;">
+        <div class="stat-card">
+            <div class="stat-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <i class="fas fa-boxes"></i>
+            </div>
+            <div class="stat-info">
+                <div class="stat-label">Total Equipment</div>
+                <div class="stat-value" id="totalEquipment">0</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <div class="stat-info">
+                <div class="stat-label">Broken/Missing</div>
+                <div class="stat-value" id="brokenEquipment">0</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                <i class="fas fa-dollar-sign"></i>
+            </div>
+            <div class="stat-info">
+                <div class="stat-label">Total Investment</div>
+                <div class="stat-value" id="equipmentExpenses">₹0</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filters-row" style="margin-bottom: 1rem;">
+        <select id="equipmentCategoryFilter" class="form-input" onchange="applyEquipmentFilters()" style="width: 200px;">
+            <option value="all">All Categories</option>
+            <option value="Cardio">Cardio</option>
+            <option value="Strength">Strength</option>
+            <option value="Other">Other</option>
+        </select>
+        
+        <select id="equipmentStatusFilter" class="form-input" onchange="applyEquipmentFilters()" style="width: 200px;">
+            <option value="all">All Status</option>
+            <option value="Working">Working</option>
+            <option value="Broken">Broken</option>
+            <option value="Missing">Missing</option>
+        </select>
+        
+        <button class="btn-secondary" onclick="resetEquipmentFilters()">
+            <i class="fas fa-redo"></i> Reset Filters
+        </button>
+        
+        <div id="equipmentFilterCount" style="margin-left: auto; color: var(--text-secondary); font-size: 0.9rem;">
+            Showing all equipment
+        </div>
+    </div>
+
+    <!-- Equipment Table (ID REMOVED) -->
+    <div class="table-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <!-- ID COLUMN REMOVED -->
+                    <th>Name</th>
+                    <th>Category</th>
+                    <th>Quantity</th>
+                    <th>Total Cost</th>
+                    <th>Status</th>
+                    <th>Purchase Date</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="equipmentTableBody">
+                <tr>
+                    <td colspan="7" style="text-align: center; padding: 2rem;">
+                        No equipment found. Click "Add Equipment" to add one.
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<!-- License Section -->
+<section id="license" class="content-section">
+    <h2 class="section-title"><i class="fas fa-key"></i> License Management</h2>
+    
+    <div class="license-container">
+        <!-- License Status Card -->
+        <div class="license-status-card">
+            <div class="license-header">
+                <i class="fas fa-certificate"></i>
+                <h3>License Status</h3>
+            </div>
+            
+            <div class="license-info">
+                <div class="license-status" id="licenseStatus">
+                    <span class="status-badge status-active" id="licenseStatusBadge">Active</span>
+                </div>
+                
+                <div class="license-details">
+                    <div class="license-detail-item">
+                        <i class="fas fa-calendar-check"></i>
+                        <div>
+                            <label>Activation Date</label>
+                            <strong id="licenseActivationDate">—</strong>
+                        </div>
+                    </div>
+                    
+                    <div class="license-detail-item">
+                        <i class="fas fa-calendar-times"></i>
+                        <div>
+                            <label>Expiry Date</label>
+                            <strong id="licenseExpiryDate">—</strong>
+                        </div>
+                    </div>
+                    
+                    <div class="license-detail-item">
+                        <i class="fas fa-hourglass-half"></i>
+                        <div>
+                            <label>Days Remaining</label>
+                            <strong id="licenseDaysRemaining" style="font-size: 1.8rem; color: var(--success-color);">—</strong>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="license-progress">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="licenseProgressFill"></div>
+                    </div>
+                    <p class="progress-text" id="licenseProgressText">License is active</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Activation Card -->
+        <div class="license-activation-card">
+            <div class="license-header">
+                <i class="fas fa-unlock-alt"></i>
+                <h3>Activate / Renew License</h3>
+            </div>
+            
+            <div class="activation-form">
+                <p style="color: var(--text-secondary); margin-bottom: 1.5rem; line-height: 1.6;">
+                    Enter your SU key to activate or renew your license. Contact support if you need a new key.
+                </p>
+                
+                <div class="form-group">
+                    <label><i class="fas fa-key"></i> SU Key</label>
+                    <input 
+                        type="text" 
+                        id="licenseKeyInput" 
+                        class="license-key-input" 
+                        placeholder="XXXX-XXXX-XXXX-XXXX"
+                        maxlength="19"
+                    >
+                    <small style="color: var(--text-secondary); display: block; margin-top: 0.5rem;">
+                        Enter the 16-character license key provided by your administrator
+                    </small>
+                </div>
+                
+                <button class="btn-activate-license" onclick="activateLicense()">
+                    <i class="fas fa-check-circle"></i> Enter Key
+                </button>
+                
+                <div class="license-help">
+                    <p><i class="fas fa-info-circle"></i> <strong>Need Help?</strong></p>
+                    <ul>
+                        <li>Contact your system administrator for a new license key</li>
+                        <li>Ensure you have an active internet connection</li>
+                        <li>License keys are case-sensitive</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <!-- License History -->
+        <div class="license-history-card">
+            <div class="license-header">
+                <i class="fas fa-history"></i>
+                <h3>Activation History</h3>
+            </div>
+            
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Action</th>
+                            <th>Key (Last 4)</th>
+                            <th>Duration</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="licenseHistoryTableBody">
+                        <tr>
+                            <td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+                                No activation history available
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</section>
+
+        <!-- Settings Section -->
+        <section id="settings" class="content-section">
+            <h2 class="section-title">Settings</h2>
+            
+            <div class="settings-container">
+                <!-- Appearance Settings -->
+                <div class="settings-card">
+                    <h3><i class="fas fa-palette"></i> Appearance</h3>
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <label>Dark Mode</label>
+                            <p>Switch between light and dark theme</p>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="darkModeToggle" onchange="toggleDarkMode()">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Database Settings -->
+                <div class="settings-card">
+                    <h3><i class="fas fa-database"></i> Database Management</h3>
+                    
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <label>Backup Location</label>
+                            <p id="currentBackupLocation">Loading...</p>
+                        </div>
+                        <button class="btn-primary" onclick="selectBackupLocation()">
+                            <i class="fas fa-folder-open"></i> Change Location
+                        </button>
+                    </div>
+
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <label>Auto Backup</label>
+                            <p>Automatically backup database</p>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="autoBackupToggle" onchange="toggleAutoBackup()">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="setting-item" id="backupFrequencySection">
+                        <div class="setting-info">
+                            <label>Backup Frequency</label>
+                            <select id="backupFrequency" class="setting-select" onchange="updateBackupFrequency()">
+                                <option value="hourly">Every Hour</option>
+                                <option value="daily" selected>Daily</option>
+                                <option value="weekly">Weekly</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <label>Last Backup</label>
+                            <p id="lastBackupTime">Never</p>
+                        </div>
+                    </div>
+
+                    <div class="settings-actions">
+                        <button class="btn-primary" onclick="createManualBackup()">
+                            <i class="fas fa-save"></i> Create Backup Now
+                        </button>
+                        <button class="btn-secondary" onclick="showRestoreModal()">
+                            <i class="fas fa-undo"></i> Restore Backup
+                        </button>
+                        <button class="btn-secondary" onclick="exportDatabase()">
+                            <i class="fas fa-file-export"></i> Export Database
+                        </button>
+                        <button class="btn-secondary" onclick="importDatabase()">
+                            <i class="fas fa-file-import"></i> Import Database
+                        </button>
+                        <button class="btn-danger" onclick="resetRevenue()">
+                            <i class="fas fa-trash-alt"></i> Reset Revenue
+                        </button>
+
+                         <!-- ✅ ADD THIS NEW BUTTON HERE -->
+    <button class="btn-danger" onclick="eraseAllData()">
+        <i class="fas fa-trash-alt"></i> Erase All Data
+    </button>
+</div>
+                    </div>
+                </div>
+
+                <!-- System Information -->
+                <div class="settings-card">
+                    <h3><i class="fas fa-info-circle"></i> System Information</h3>
+                    <div class="system-info">
+                        <div class="info-row">
+                            <span>Version:</span>
+                            <strong>1.0.0</strong>
+                        </div>
+                        <div class="info-row">
+                            <span>Total Members:</span>
+                            <strong id="systemTotalMembers">0</strong>
+                        </div>
+                        <div class="info-row">
+                            <span>Total Trainers:</span>
+                            <strong id="systemTotalTrainers">0</strong>
+                        </div>
+                        <div class="info-row">
+                            <span>Database Size:</span>
+                            <strong id="databaseSize">Calculating...</strong>
+                        </div>
+                    </div>
+                    <div id="driveInfo" class="system-info" style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 2px solid var(--light-bg);">
+                        <!-- Drive information will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Backup Location Modal -->
+    <div id="backupLocationModal" class="modal">
+        <div class="modal-content modal-large">
+            <span class="close" onclick="closeModal('backupLocationModal')">&times;</span>
+            <h2>Select Backup Location</h2>
+            <p class="modal-description">Choose a drive to store your database backups. We recommend using a drive other than your system drive.</p>
+            
+            <div id="drivesList" class="drives-list">
+                <div class="loading-spinner">
+                    <i class="fas fa-spinner fa-spin"></i> Detecting drives...
+                </div>
+            </div>
+            
+            <div class="form-actions">
+                <button type="button" class="btn-secondary" onclick="closeModal('backupLocationModal')">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Restore Backup Modal -->
+    <div id="restoreBackupModal" class="modal">
+        <div class="modal-content modal-large">
+            <span class="close" onclick="closeModal('restoreBackupModal')">&times;</span>
+            <h2>Restore Database</h2>
+            <p class="modal-description">Select a backup to restore. This will replace your current database.</p>
+            
+            <div id="backupsList" class="backups-list">
+                <div class="loading-spinner">
+                    <i class="fas fa-spinner fa-spin"></i> Loading backups...
+                </div>
+            </div>
+            
+            <div class="form-actions">
+                <button type="button" class="btn-secondary" onclick="closeModal('restoreBackupModal')">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Backup Modal -->
+    <div id="quickBackupModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('quickBackupModal')">&times;</span>
+            <h2><i class="fas fa-database"></i> Quick Backup</h2>
+            <div class="backup-options">
+                <button class="backup-option-btn" onclick="createManualBackup()">
+                    <i class="fas fa-save"></i>
+                    <div>
+                        <strong>Backup Now</strong>
+                        <p>Create an instant backup</p>
+                    </div>
+                </button>
+                <button class="backup-option-btn" onclick="showRestoreModal(); closeModal('quickBackupModal')">
+                    <i class="fas fa-undo"></i>
+                    <div>
+                        <strong>Restore</strong>
+                        <p>Restore from backup</p>
+                    </div>
+                </button>
+                <button class="backup-option-btn" onclick="selectBackupLocation(); closeModal('quickBackupModal')">
+                    <i class="fas fa-cog"></i>
+                    <div>
+                        <strong>Settings</strong>
+                        <p>Configure backup location</p>
+                    </div>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Adding/Editing Members -->
+<div id="memberModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeModal('memberModal')">&times;</span>
+        <h2 id="memberModalTitle">Add Member</h2>
+        <form id="memberForm">
+            <input type="hidden" id="memberId">
+            <div class="form-group">
+                <label>Name</label>
+                <input type="text" id="memberName" required>
+            </div>
+            <div class="form-group">
+                <label>Type</label>
+                <select id="memberType" required>
+                    <option value="Regular">Regular</option>
+                    <option value="Premium">Premium</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Phone</label>
+                <input type="tel" id="memberPhone" required>
+            </div>
+            <div class="form-group">
+                <label>Email <span style="color: var(--text-secondary); font-size: 0.85rem;">(Optional)</span></label>
+                <input type="email" id="memberEmail" placeholder="member@example.com">
+            </div>
+            <div class="form-group">
+                <label>Address <span style="color: var(--text-secondary); font-size: 0.85rem;">(Optional)</span></label>
+                <textarea id="memberAddress" rows="3" placeholder="Enter full address" style="width: 100%; padding: 0.75rem; border: 2px solid var(--border-color); border-radius: 8px; font-size: 1rem; font-family: inherit; resize: vertical;"></textarea>
+            </div>
+            <div class="form-group">
+                <label>Status</label>
+                <select id="memberStatus" required>
+                    <option value="Active">Active</option>
+                    <option value="Suspended">Suspended</option>
+                    <option value="Quit">Quit</option>
+                </select>
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn-primary">Save</button>
+                <button type="button" class="btn-secondary" onclick="closeModal('memberModal')">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+    <!-- Modal for Adding/Editing Trainers -->
+    <div id="trainerModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('trainerModal')">&times;</span>
+            <h2 id="trainerModalTitle">Add Trainer</h2>
+            <form id="trainerForm">
+                <input type="hidden" id="trainerId">
+                <div class="form-group">
+                    <label>Name</label>
+                    <input type="text" id="trainerName" required>
+                </div>
+                <div class="form-group">
+                    <label>Specialty</label>
+                    <input type="text" id="trainerSpecialty" required>
+                </div>
+                <div class="form-group">
+                    <label>Phone</label>
+                    <input type="tel" id="trainerPhone" required>
+                </div>
+                <div class="form-group">
+                    <label>Salary</label>
+                    <input type="number" id="trainerSalary" required>
+                </div>
+                <div class="form-group">
+                    <label>Status</label>
+                    <select id="trainerStatus" required>
+                        <option value="Active">Active</option>
+                        <option value="Inactive">Inactive</option>
+                    </select>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn-primary">Save</button>
+                    <button type="button" class="btn-secondary" onclick="closeModal('trainerModal')">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal for Adding/Editing Payments -->
+    <div id="paymentModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('paymentModal')">&times;</span>
+            <h2 id="paymentModalTitle">Add Payment</h2>
+            <form id="paymentForm">
+                <input type="hidden" id="paymentId">
+                <div class="form-group">
+                    <label>Member</label>
+                    <select id="paymentMember" required></select>
+                </div>
+                <div class="form-group">
+                    <label>Amount</label>
+                    <input type="number" id="paymentAmount" required>
+                </div>
+                <div class="form-group">
+                    <label>Status</label>
+                    <select id="paymentStatus" required>
+    <option value="Due">Due</option>
+    <option value="Paid">Paid</option>
+</select>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn-primary">Save</button>
+                    <button type="button" class="btn-secondary" onclick="closeModal('paymentModal')">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+   <!-- Trainer Salary History Modal -->
+<div id="trainerSalaryHistoryModal" class="modal">
+    <div class="modal-content" style="max-width: 900px;">
+        <span class="close" onclick="closeModal('trainerSalaryHistoryModal')">&times;</span>
+        <h2 id="trainerSalaryHistoryTitle">Salary History</h2>
+        <div id="trainerSalaryHistoryInfo" style="margin: 1rem 0; padding: 1rem; background: var(--light-bg); border-radius: 4px;"></div>
+        
+        <button class="btn-primary" onclick="addNewSalaryPayment()" style="margin-bottom: 1rem;">
+            <i class="fas fa-plus"></i> Add Salary Payment
+        </button>
+        
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Amount</th>
+                        <th>Status</th>
+                        <th>Payment Date</th>
+                        <th>Time</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="trainerSalaryHistoryTableBody">
+                    <!-- Populated by JavaScript -->
+                </tbody>
+            </table>
+        </div>
+        
+        <button class="btn-secondary" onclick="closeModal('trainerSalaryHistoryModal')" style="margin-top: 1rem; width: 100%;">
+            Close
+        </button>
+    </div>
+</div>
+
+<!-- Reports Modal -->
+<div id="reportsModal" class="modal">
+    <div class="modal-content modal-large" style="max-width: 900px;">
+        <span class="close" onclick="closeModal('reportsModal')">&times;</span>
+        <h2><i class="fas fa-chart-bar"></i> Business Reports</h2>
+        
+        <div class="report-tabs">
+            <button class="report-tab active" onclick="switchReportTab('summary')">Summary Report</button>
+            <button class="report-tab" onclick="switchReportTab('revenue')">Revenue Report</button>
+            <button class="report-tab" onclick="switchReportTab('members')">Members Report</button>
+            <button class="report-tab" onclick="switchReportTab('trainers')">Trainers Report</button>
+        </div>
+        
+        <div id="reportContent" style="margin-top: 2rem;">
+            <!-- Report content will be loaded here -->
+        </div>
+        
+        <div class="form-actions" style="margin-top: 2rem;">
+            <button class="btn-primary" onclick="printReport()">
+                <i class="fas fa-print"></i> Print Report
+            </button>
+            <button class="btn-secondary" onclick="closeModal('reportsModal')">Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- Receipt Modal -->
+<div id="receiptModal" class="modal">
+    <div class="modal-content" style="max-width: 600px;">
+        <span class="close" onclick="closeModal('receiptModal')">&times;</span>
+        <h2><i class="fas fa-receipt"></i> Create Receipt</h2>
+        
+        <form id="receiptForm">
+            <div class="form-group">
+                <label>Member Name</label>
+                <select id="receiptMember" required onchange="updateReceiptDetails()">
+                    <option value="">Select Member</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>Member Type</label>
+                <input type="text" id="receiptMemberType" readonly>
+            </div>
+            
+            <div class="form-group">
+                <label>Amount</label>
+                <input type="number" id="receiptAmount" required>
+            </div>
+            
+            <div class="form-group">
+                <label>Payment Method</label>
+                <select id="receiptPaymentMethod" required>
+                    <option value="Cash">Cash</option>
+                    <option value="Card">Credit/Debit Card</option>
+                    <option value="UPI">UPI</option>
+                    <option value="Bank Transfer">Bank Transfer</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>Description</label>
+                <textarea id="receiptDescription" rows="2" placeholder="Monthly membership fee, Personal training, etc."></textarea>
+            </div>
+            
+            <div class="form-actions">
+                <button type="button" class="btn-primary" onclick="generateReceipt()">
+                    <i class="fas fa-file-invoice"></i> Generate Receipt
+                </button>
+                <button type="button" class="btn-secondary" onclick="closeModal('receiptModal')">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Receipt Print View -->
+<div id="receiptPrintView" class="modal">
+    <div class="modal-content" style="max-width: 800px;">
+        <span class="close" onclick="closeModal('receiptPrintView')">&times;</span>
+        
+        <div id="receiptContent" style="background: white; padding: 2rem; border: 2px solid #000;">
+            <!-- Receipt content will be generated here -->
+        </div>
+        
+        <div class="form-actions" style="margin-top: 2rem;">
+            <button class="btn-primary" onclick="printReceipt()">
+                <i class="fas fa-print"></i> Print Receipt
+            </button>
+            <button class="btn-secondary" onclick="closeModal('receiptPrintView')">Close</button>
+        </div>
+    </div>
+</div>
+
+
+<!-- Generate Report Modal -->
+<div id="generateReportModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeModal('generateReportModal')">&times;</span>
+        <h2><i class="fas fa-chart-bar"></i> Generate Report</h2>
+        
+        <form id="generateReportForm" onsubmit="event.preventDefault(); generateNewReport();">
+            <div class="form-group">
+                <label>Report Type</label>
+                <select id="reportType" class="form-input" required>
+    <option value="all">Complete Business Report (All Sections)</option>
+    <option value="summary">Summary Report</option>
+    <option value="revenue">Revenue Report</option>
+    <option value="members">Members Report</option>
+    <option value="trainers">Trainers Report</option>
+    <option value="trainer-attendance">Trainer Attendance Report</option> <!-- NEW -->
+    <option value="trainer-salary">Trainer Salary Report</option> <!-- NEW -->
+    <option value="attendance">Member Attendance Report</option>
+</select>
+            </div>
+            
+            <div class="form-actions">
+                <button type="submit" class="btn-primary">
+                    <i class="fas fa-file-alt"></i> Generate Report
+                </button>
+                <button type="button" class="btn-secondary" onclick="closeModal('generateReportModal')">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Report View Modal -->
+<div id="reportViewModal" class="modal">
+    <div class="modal-content modal-large" style="max-width: 900px;">
+        <span class="close" onclick="closeModal('reportViewModal')">&times;</span>
+        <h2 id="reportViewTitle"><i class="fas fa-chart-bar"></i> Report</h2>
+        
+        <div id="reportViewContent" style="margin-top: 2rem; max-height: 60vh; overflow-y: auto;">
+            <!-- Report content will be loaded here -->
+        </div>
+        
+        <div class="form-actions" style="margin-top: 2rem;">
+            <button class="btn-primary" onclick="printSavedReport()">
+                <i class="fas fa-print"></i> Print Report
+            </button>
+            <button class="btn-secondary" onclick="closeModal('reportViewModal')">Close</button>
+        </div>
+    </div>
+</div>
+
+    <!-- Modal for Adding Premium Members -->
+    <div id="premiumModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('premiumModal')">&times;</span>
+            <h2 id="premiumModalTitle">Add Premium Member</h2>
+            <form id="premiumForm">
+                <input type="hidden" id="premiumId">
+                <div class="form-group">
+                    <label>Name</label>
+                    <input type="text" id="premiumName" required>
+                </div>
+                <div class="form-group">
+                    <label>Phone</label>
+                    <input type="tel" id="premiumPhone" required>
+                </div>
+                <div class="form-group">
+                    <label>Plan</label>
+                    <select id="premiumPlan" required onchange="updatePremiumAmount()">
+                        <option value="">Select Plan</option>
+                        <option value="Monthly Premium">Monthly Premium - $150</option>
+                        <option value="Quarterly Premium">Quarterly Premium - $400</option>
+                        <option value="Annual Premium">Annual Premium - $1500</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Amount</label>
+                    <input type="number" id="premiumAmount" required readonly style="background-color: #f0f0f0;">
+                </div>
+                <div class="form-group">
+                    <label>Payment Status</label>
+                    <select id="premiumPaymentStatus" required>
+                        <option value="Paid">Paid</option>
+                        <option value="Due">Due</option>
+                        <option value="Pending">Pending</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Assign Trainer</label>
+                    <select id="premiumTrainer">
+                        <option value="">No Trainer Assigned</option>
+                    </select>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn-primary">Save</button>
+                    <button type="button" class="btn-secondary" onclick="closeModal('premiumModal')">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <!-- Mark Attendance Modal -->
+<div id="markAttendanceModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeModal('markAttendanceModal')">&times;</span>
+        <h2>Mark Attendance</h2>
+        <form id="attendanceForm">
+            <input type="hidden" id="attendanceId">
+            <div class="form-group">
+                <label>Select Member</label>
+                <select id="attendanceMember" required>
+                    <option value="">Choose a member...</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Shift</label>
+                <select id="attendanceShift" required>
+                    <option value="Morning">Morning (6 AM - 12 PM)</option>
+                    <option value="Evening">Evening (12 PM - 6 PM)</option>
+                    <option value="Night">Night (6 PM - 12 AM)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Date</label>
+                <input type="date" id="attendanceDate" required>
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn-primary">Mark Present</button>
+                <button type="button" class="btn-secondary" onclick="closeModal('markAttendanceModal')">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Payment History Modal -->
+    <div id="paymentHistoryModal" class="modal">
+        <div class="modal-content modal-large">
+            <span class="close" onclick="closeModal('paymentHistoryModal')">&times;</span>
+            <h2 id="paymentHistoryTitle">Payment History</h2>
+            <p id="paymentHistoryMemberInfo" style="color: var(--text-secondary); margin-bottom: 1.5rem;"></p>
+            
+            <div style="margin-bottom: 1rem;">
+                <button class="btn-primary" onclick="addNewPaymentRecord()">
+                    <i class="fas fa-plus"></i> Add Payment Record
+                </button>
+            </div>
+            
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                            <th>Date & Time</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="paymentHistoryTableBody"></tbody>
+                </table>
+            </div>
+            
+            <div class="form-actions" style="margin-top: 1.5rem;">
+                <button type="button" class="btn-secondary" onclick="closeModal('paymentHistoryModal')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Equipment Modal -->
+<div id="equipmentModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeModal('equipmentModal')">&times;</span>
+        <h2 id="equipmentModalTitle">Add Equipment</h2>
+        <form id="equipmentForm">
+            <input type="hidden" id="equipmentId">
+            <div class="form-group">
+                <label>Equipment Name</label>
+                <input type="text" id="equipmentName" required>
+            </div>
+            <div class="form-group">
+                <label>Category</label>
+                <select id="equipmentCategory" required>
+                    <option value="">Select Category</option>
+                    <option value="Barbells">Barbells</option>
+                    <option value="Dumbbells">Dumbbells</option>
+                    <option value="Plates">Plates</option>
+                    <option value="Bench Press">Bench Press (Flat/Incline/Decline)</option>
+                    <option value="Smith Machine">Smith Machine</option>
+                    <option value="Squat Machine">Squat Machine</option>
+                    <option value="Leg Extension">Leg Extension Machine</option>
+                    <option value="Preacher Curl">Preacher Curl Machine</option>
+                    <option value="Lateral Machine">Lateral Machine</option>
+                    <option value="Cable Machine">Cable Machine</option>
+                    <option value="Treadmill">Treadmill</option>
+                    <option value="Skipping Ropes">Skipping Ropes</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Quantity</label>
+                <input type="number" id="equipmentQuantity" required min="1" value="1">
+            </div>
+            <div class="form-group">
+                <label>Cost ($)</label>
+                <input type="number" id="equipmentCost" required min="0" step="0.01">
+            </div>
+            <div class="form-group">
+                <label>Status</label>
+                <select id="equipmentStatus" required>
+                    <option value="Working">Working</option>
+                    <option value="Broken">Broken</option>
+                    <option value="Missing">Missing</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Purchase Date</label>
+                <input type="date" id="equipmentPurchaseDate" required>
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn-primary">Save</button>
+                <button type="button" class="btn-secondary" onclick="closeModal('equipmentModal')">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+    <!-- Load scripts only once! -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script src="app.js"></script>
+    <script>
+
+function logout() {
+    // Show professional logout modal
+    const modal = document.getElementById('logoutModal');
+    modal.style.display = 'flex';
+    modal.classList.add('show');
+}
+
+function confirmLogout() {
+    sessionStorage.clear();
+    localStorage.removeItem('currentUser');
+    
+    const modal = document.getElementById('logoutModal');
+    modal.querySelector('h2').textContent = 'Logging Out...';
+    modal.querySelector('p').textContent = 'Please wait...';
+    modal.querySelector('.form-actions').style.display = 'none';
+    
+    setTimeout(() => {
+        window.location.href = 'index.html';
+    }, 800);
+}
+function closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.style.display = 'none';
+        modal.classList.remove('show');
+        
+        // Reset form if exists
+        const form = modal.querySelector('form');
+        if (form) {
+            form.reset();
+        }
+        
+        // Remove any event listener issues
+        modal.style.pointerEvents = 'auto';
+    }
+}
+
+    </script>
+</body>
+</html>
